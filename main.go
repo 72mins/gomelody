@@ -2,12 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
-	"gomelody/pkg/messageCreate"
 	"os"
-	"os/signal"
-	"syscall"
 )
 
 var (
@@ -15,37 +11,17 @@ var (
 )
 
 func init() {
+	// Load .env file
 	err := godotenv.Load()
 	if err != nil {
 		fmt.Println("Error loading .env file")
 	}
 
+	// Get bot token from .env
 	Token = os.Getenv("BOT_TOKEN")
 }
 
 func main() {
-	dg, err := discordgo.New("Bot " + Token)
-	if err != nil {
-		fmt.Println("Error creating Discord session: ", err)
-		return
-	}
-
-	dg.AddHandler(messageCreate.MessageCreate)
-	dg.Identify.Intents = discordgo.IntentsGuildMessages
-
-	err = dg.Open()
-	if err != nil {
-		fmt.Println("Error opening connection: ", err)
-		return
-	}
-
-	fmt.Println("Bot is now running. Press CTRL+C to exit.")
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
-	<-sc
-
-	err = dg.Close()
-	if err != nil {
-		return
-	}
+	// Connect to Discord
+	ConnectDiscord()
 }
