@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
-	"gomelody/pkg/messageCreate"
 	"os"
 	"os/signal"
 	"syscall"
@@ -18,12 +17,19 @@ func ConnectDiscord() {
 	}
 
 	// Register the messageCreate func as a callback for MessageCreate events
-	dg.AddHandler(messageCreate.MessageCreate)
-	dg.Identify.Intents = discordgo.IntentsGuildMessages
+	dg.AddHandler(MessageCreate)
+
+	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages | discordgo.IntentsGuilds | discordgo.IntentsGuildVoiceStates | discordgo.IntentsAll)
 
 	err = dg.Open()
 	if err != nil {
 		fmt.Println("Error opening connection: ", err)
+		return
+	}
+
+	_, err = dg.User("@me")
+	if err != nil {
+		fmt.Println("Error obtaining account details: ", err)
 		return
 	}
 
@@ -36,4 +42,16 @@ func ConnectDiscord() {
 	if err != nil {
 		return
 	}
+}
+
+func FindVoiceChannel(s *discordgo.Session, user string) VoiceChannel {
+	for _, g := range s.State.Guilds {
+		for _, v := range g.VoiceStates {
+			if v.UserID == user {
+				return VoiceChannel{v.ChannelID, g.ID}
+			}
+		}
+	}
+
+	return VoiceChannel{}
 }
