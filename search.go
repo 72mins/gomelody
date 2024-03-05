@@ -26,7 +26,7 @@ func init() {
 	YoutubeKey = os.Getenv("YOUTUBE_KEY")
 }
 
-func YoutubeSearch() string {
+func YoutubeSearch(query string) string {
 	ctx := context.Background()
 	service, err := youtube.NewService(ctx, option.WithAPIKey(YoutubeKey))
 	if err != nil {
@@ -34,7 +34,7 @@ func YoutubeSearch() string {
 		return ""
 	}
 
-	call := service.Search.List([]string{"id", "snippet"}).Q("desingerica djuskavac").MaxResults(1)
+	call := service.Search.List([]string{"id", "snippet"}).Q(query).MaxResults(1)
 	response, err := call.Do()
 	if err != nil {
 		fmt.Println("Error making search call: ", err)
