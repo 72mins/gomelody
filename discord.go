@@ -3,10 +3,25 @@ package main
 import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
+	"github.com/joho/godotenv"
 	"os"
 	"os/signal"
-	"syscall"
 )
+
+var (
+	ApplicationID string
+)
+
+func init() {
+	// Load .env file
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println("Error loading .env file")
+	}
+
+	// Get bot token from .env
+	ApplicationID = os.Getenv("APP_ID")
+}
 
 func ConnectDiscord() {
 	// Create a new Discord session using the provided bot token
@@ -16,8 +31,34 @@ func ConnectDiscord() {
 		return
 	}
 
+	GuildID := "539060061033463811"
+
+	// Register commands
+	_, err = dg.ApplicationCommandBulkOverwrite(ApplicationID, GuildID, []*discordgo.ApplicationCommand{
+		{
+			Name:        "ping",
+			Description: "Replies with Pong!",
+		},
+		{
+			Name:        "join",
+			Description: "Joins the voice channel you are in",
+		},
+		{
+			Name:        "leave",
+			Description: "Leaves the voice channel",
+		},
+		{
+			Name:        "play",
+			Description: "Plays a song",
+		},
+	})
+	if err != nil {
+		fmt.Println("Error creating slash commands: ", err)
+		return
+	}
+
 	// Register the messageCreate func as a callback for MessageCreate events
-	dg.AddHandler(MessageCreate)
+	dg.AddHandler(InteractionResponse)
 
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages | discordgo.IntentsGuilds | discordgo.IntentsGuildVoiceStates | discordgo.IntentsAll)
 
@@ -27,16 +68,10 @@ func ConnectDiscord() {
 		return
 	}
 
-	_, err = dg.User("@me")
-	if err != nil {
-		fmt.Println("Error obtaining account details: ", err)
-		return
-	}
-
 	fmt.Println("Bot is now running. Press CTRL+C to exit.")
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
-	<-sc
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt)
+	<-stop
 
 	err = dg.Close()
 	if err != nil {
