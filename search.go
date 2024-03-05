@@ -34,7 +34,7 @@ func YoutubeSearch() string {
 		return ""
 	}
 
-	call := service.Search.List([]string{"id", "snippet"}).Q("golang").MaxResults(1)
+	call := service.Search.List([]string{"id", "snippet"}).Q("desingerica djuskavac").MaxResults(1)
 	response, err := call.Do()
 	if err != nil {
 		fmt.Println("Error making search call: ", err)
@@ -78,7 +78,7 @@ func YoutubeSearch() string {
 		}
 	}(stream)
 
-	file, err := os.Create(audioTitle + ".mp3")
+	file, err := os.Create("audio/" + audioTitle + ".mp3")
 	if err != nil {
 		fmt.Println("Error creating file: ", err)
 		return ""
