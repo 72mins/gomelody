@@ -50,6 +50,14 @@ func ConnectDiscord() {
 		{
 			Name:        "play",
 			Description: "Plays a song",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "name",
+					Description: "Name of the song to play",
+					Required:    true,
+				},
+			},
 		},
 	})
 	if err != nil {
