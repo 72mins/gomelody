@@ -34,41 +34,16 @@ func ConnectDiscord() {
 	GuildID := "539060061033463811"
 
 	// Register commands
-	_, err = dg.ApplicationCommandBulkOverwrite(ApplicationID, GuildID, []*discordgo.ApplicationCommand{
-		{
-			Name:        "ping",
-			Description: "Replies with Pong!",
-		},
-		{
-			Name:        "join",
-			Description: "Joins the voice channel you are in",
-		},
-		{
-			Name:        "leave",
-			Description: "Leaves the voice channel",
-		},
-		{
-			Name:        "play",
-			Description: "Plays a song",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "name",
-					Description: "Name of the song to play",
-					Required:    true,
-				},
-			},
-		},
-	})
+	_, err = dg.ApplicationCommandBulkOverwrite(ApplicationID, GuildID, GetApplicationCommands())
 	if err != nil {
 		fmt.Println("Error creating slash commands: ", err)
 		return
 	}
 
-	// Register the messageCreate func as a callback for MessageCreate events
+	// Register the InteractionResponse func as a callback for MessageCreate events
 	dg.AddHandler(InteractionResponse)
 
-	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages | discordgo.IntentsGuilds | discordgo.IntentsGuildVoiceStates | discordgo.IntentsAll)
+	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages | discordgo.IntentsGuilds | discordgo.IntentsGuildVoiceStates)
 
 	err = dg.Open()
 	if err != nil {

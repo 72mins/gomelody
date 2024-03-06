@@ -5,7 +5,43 @@ import (
 	"github.com/bwmarrin/dgvoice"
 	"github.com/bwmarrin/discordgo"
 	"os"
+	"path/filepath"
 )
+
+var (
+	dgv *discordgo.VoiceConnection
+)
+
+func CleanAudioFolder() error {
+	path := "audio"
+
+	d, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+
+	defer func(d *os.File) {
+		err := d.Close()
+		if err != nil {
+			fmt.Println("Error closing file: ", err)
+		}
+	}(d)
+
+	names, err := d.Readdirnames(-1)
+	if err != nil {
+		return err
+	}
+
+	// Remove all files in the audio folder
+	for _, name := range names {
+		err = os.RemoveAll(filepath.Join(path, name))
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
 
 func InteractionResponse(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	data := i.ApplicationCommandData()
@@ -51,7 +87,7 @@ func InteractionResponse(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				return
 			}
 		}
-	case "leave":
+	case "leave", "stop":
 		voice, err := s.ChannelVoiceJoin(i.GuildID, "", false, false)
 		if err != nil {
 			return
@@ -59,17 +95,37 @@ func InteractionResponse(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		err = voice.Disconnect()
 		if err != nil {
+
+			return
+		}
+
+		err = CleanAudioFolder()
+		if err != nil {
 			return
 		}
 
 		err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				Content: "Leaving voice channel :(",
+				Content: "Stopped audio and left voice channel.",
 			},
 		})
 	case "play":
 		channelInfo := FindVoiceChannel(s, i.Member.User.ID)
+
+		files, _ := os.ReadDir("audio")
+		if len(files) > 0 {
+			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "A song is already playing!",
+				},
+			})
+			if err != nil {
+				return
+			}
+			return
+		}
 
 		if channelInfo.ChannelID == "" {
 			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -83,47 +139,47 @@ func InteractionResponse(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			}
 			return
 		} else {
-			dgv, err := s.ChannelVoiceJoin(channelInfo.GuildID, channelInfo.ChannelID, false, false)
-			if err != nil {
-				fmt.Println("Error joining voice channel: ", err)
-				return
+			if dgv == nil {
+				dgv, _ = s.ChannelVoiceJoin(channelInfo.GuildID, channelInfo.ChannelID, false, false)
+			} else {
+				dgv.Close()
+
+				dgv, _ = s.ChannelVoiceJoin(channelInfo.GuildID, channelInfo.ChannelID, false, false)
 			}
 
-			err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			// Get query from the user and search for the song on YouTube
+			query := data.Options[0].Value.(string)
+			title := YoutubeSearch(i, s, query)
+
+			_ = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: "Playing audio!",
+					Content: "Playing " + title,
 				},
 			})
-			if err != nil {
-				return
-			}
-
-			query := data.Options[0].Value.(string)
-
-			YoutubeSearch(query)
 
 			if !dgv.Ready {
 				fmt.Println("Voice not ready")
 				return
 			}
 
-			// get 'audio' folder from root
 			Folder := "audio"
 
-			// Start loop and attempt to play all files in the given folder
-			fmt.Println("Reading Folder: ", Folder)
+			// Play all files in the audio folder
 			files, _ := os.ReadDir(Folder)
 			for _, f := range files {
-				fmt.Println("PlayAudioFile:", f.Name())
-
 				dgvoice.PlayAudioFile(dgv, fmt.Sprintf("%s/%s", Folder, f.Name()), make(chan bool))
-
 			}
 
-			// Close connections
-			dgv.Close()
-			//discord.Close()
+			err := CleanAudioFolder()
+			if err != nil {
+				return
+			}
+
+			err = dgv.Disconnect()
+			if err != nil {
+				return
+			}
 		}
 	}
 }
