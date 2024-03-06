@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 	dl "github.com/kkdai/youtube/v2"
 	"google.golang.org/api/option"
@@ -26,7 +27,7 @@ func init() {
 	YoutubeKey = os.Getenv("YOUTUBE_KEY")
 }
 
-func YoutubeSearch(query string) string {
+func YoutubeSearch(i *discordgo.InteractionCreate, s *discordgo.Session, query string) string {
 	ctx := context.Background()
 	service, err := youtube.NewService(ctx, option.WithAPIKey(YoutubeKey))
 	if err != nil {
@@ -51,8 +52,16 @@ func YoutubeSearch(query string) string {
 	}
 
 	if videoId == "" {
-		// TODO: Handle no audio found
-		fmt.Println("No audio found")
+		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "No video found for that search.",
+			},
+		})
+		if err != nil {
+			return ""
+		}
+
 		return ""
 	}
 
@@ -60,8 +69,12 @@ func YoutubeSearch(query string) string {
 
 	vid, err := ytClient.GetVideo(videoId)
 	if err != nil {
-		fmt.Println("Error getting video: ", err)
-		return ""
+		for vid == nil {
+			vid, err = ytClient.GetVideo(videoId)
+			if err != nil {
+				fmt.Println("Error getting video: ", err)
+			}
+		}
 	}
 
 	formats := vid.Formats.WithAudioChannels()
@@ -97,7 +110,5 @@ func YoutubeSearch(query string) string {
 		return ""
 	}
 
-	fmt.Println("File created: ", audioTitle+".mp3")
-
-	return audioTitle + ".mp3"
+	return audioTitle
 }
