@@ -28,6 +28,10 @@ To run the bot, simply install the dependencies and run the bot:
 go install
 go run .
 ```
+Or if you want to run it using Docker:
+```dockerfile
+docker-compose up -d
+```
 
 ### Available Commands
 
