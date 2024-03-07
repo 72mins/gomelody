@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/bwmarrin/dgvoice"
 	"github.com/bwmarrin/discordgo"
@@ -9,8 +10,41 @@ import (
 )
 
 var (
-	dgv *discordgo.VoiceConnection
+	dgv                *discordgo.VoiceConnection
+	insideVoiceChannel bool
 )
+
+// GetDPMode returns the current DP mode from db.json
+func GetDPMode() bool {
+	data := Database{}
+
+	db, _ := os.ReadFile("db.json")
+
+	err := json.Unmarshal(db, &data)
+	if err != nil {
+		fmt.Println("Error unmarshalling JSON: ", err)
+	}
+
+	return data.DpMode
+}
+
+func ToggleDPMode() bool {
+	data := Database{}
+
+	db, _ := os.ReadFile("db.json")
+
+	err := json.Unmarshal(db, &data)
+	if err != nil {
+		fmt.Println("Error unmarshalling JSON: ", err)
+	}
+
+	data.DpMode = !data.DpMode
+
+	file, _ := json.MarshalIndent(data, "", " ")
+	_ = os.WriteFile("db.json", file, 0644)
+
+	return data.DpMode
+}
 
 func CleanAudioFolder() error {
 	path := "audio"
@@ -77,6 +111,8 @@ func InteractionResponse(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				return
 			}
 
+			insideVoiceChannel = true
+
 			err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -88,6 +124,18 @@ func InteractionResponse(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			}
 		}
 	case "leave", "stop":
+		if !insideVoiceChannel {
+			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "I am not in a voice channel!",
+				},
+			})
+			if err != nil {
+				return
+			}
+		}
+
 		voice, err := s.ChannelVoiceJoin(i.GuildID, "", false, false)
 		if err != nil {
 			return
@@ -98,6 +146,8 @@ func InteractionResponse(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 			return
 		}
+
+		insideVoiceChannel = false
 
 		err = CleanAudioFolder()
 		if err != nil {
@@ -110,6 +160,24 @@ func InteractionResponse(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				Content: "Stopped audio and left voice channel.",
 			},
 		})
+	case "dp_mode":
+		mode := ToggleDPMode()
+
+		var content string
+		if mode {
+			content = "DP mode is now turned on!"
+		} else {
+			content = "DP mode is now turned off!"
+		}
+
+		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: content,
+			}})
+		if err != nil {
+			return
+		}
 	case "play":
 		channelInfo := FindVoiceChannel(s, i.Member.User.ID)
 
@@ -146,6 +214,8 @@ func InteractionResponse(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 				dgv, _ = s.ChannelVoiceJoin(channelInfo.GuildID, channelInfo.ChannelID, false, false)
 			}
+
+			insideVoiceChannel = true
 
 			// Get query from the user and search for the song on YouTube
 			query := data.Options[0].Value.(string)
