@@ -10,6 +10,7 @@ import (
 	"google.golang.org/api/youtube/v3"
 	"io"
 	"os"
+	"regexp"
 )
 
 var (
@@ -25,6 +26,12 @@ func init() {
 
 	// Get bot token from .env
 	YoutubeKey = os.Getenv("YOUTUBE_KEY")
+}
+
+func ValidateQuery(query string) bool {
+	pattern := regexp.MustCompile(`(?i)desingerica|pljugica`)
+
+	return pattern.MatchString(query)
 }
 
 func YoutubeSearch(i *discordgo.InteractionCreate, s *discordgo.Session, query string) string {
@@ -49,6 +56,25 @@ func YoutubeSearch(i *discordgo.InteractionCreate, s *discordgo.Session, query s
 	for _, item := range response.Items {
 		videoId = item.Id.VideoId
 		audioTitle = item.Snippet.Title
+	}
+
+	dpMode := GetDPMode()
+	if dpMode {
+		allowed := ValidateQuery(audioTitle)
+
+		if !allowed {
+			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Bato, može samo Desingerica i Pljugica. DP mode je uključen.",
+				},
+			})
+			if err != nil {
+				return ""
+			}
+
+			return ""
+		}
 	}
 
 	if videoId == "" {

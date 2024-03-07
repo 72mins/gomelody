@@ -21,6 +21,10 @@ func GetApplicationCommands() []*discordgo.ApplicationCommand {
 			Description: "Stops the current song",
 		},
 		{
+			Name:        "dp_mode",
+			Description: "Toggles between DP and non-DP mode",
+		},
+		{
 			Name:        "play",
 			Description: "Plays a song",
 			Options: []*discordgo.ApplicationCommandOption{
