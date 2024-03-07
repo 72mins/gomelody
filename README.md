@@ -16,9 +16,10 @@ the final one is the YouTube API key from the [Google Developer Console](https:/
 Example .env file:
 
 ``` env
-BOT_TOKEN=[string]
-YOUTUBE_KEY=[string
-APP_ID=[integer]
+BOT_TOKEN=[string] # Discord bot token from the Discord Developer Portal
+YOUTUBE_KEY=[string] 
+APP_ID=[integer] # ID of the Discord application from the Discord Developer Portal
+SERVER_ID=[integer] # ID of the Discord server the bot will be used in
 ```
 
 To run the bot, simply install the dependencies and run the bot:
