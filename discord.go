@@ -10,6 +10,7 @@ import (
 
 var (
 	ApplicationID string
+	ServerID      string
 )
 
 func init() {
@@ -19,8 +20,8 @@ func init() {
 		fmt.Println("Error loading .env file")
 	}
 
-	// Get bot token from .env
 	ApplicationID = os.Getenv("APP_ID")
+	ServerID = os.Getenv("SERVER_ID")
 }
 
 func ConnectDiscord() {
@@ -31,10 +32,8 @@ func ConnectDiscord() {
 		return
 	}
 
-	GuildID := "539060061033463811"
-
 	// Register commands
-	_, err = dg.ApplicationCommandBulkOverwrite(ApplicationID, GuildID, GetApplicationCommands())
+	_, err = dg.ApplicationCommandBulkOverwrite(ApplicationID, ServerID, GetApplicationCommands())
 	if err != nil {
 		fmt.Println("Error creating slash commands: ", err)
 		return
