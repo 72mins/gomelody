@@ -9,3 +9,4 @@ services:
       - BOT_TOKEN=${BOT_TOKEN}
       - YOUTUBE_KEY=${YOUTUBE_KEY}
       - APP_ID=${APP_ID}
+      - SERVER_ID=${SERVER_ID}
