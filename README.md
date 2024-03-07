@@ -29,7 +29,7 @@ go install
 go run .
 ```
 Or if you want to run it using Docker:
-```dockerfile
+```
 docker-compose up -d
 ```
 
