@@ -1,10 +1,17 @@
-# GoMelody Discord Bot
+<div align="center">
+
+## GoMelody Discord Bot
+
+[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
+
+</div>
+
+<br />
 
 A simple discord bot that queries YouTube for music and plays
 it in a voice channel that the user that requested the music is in.
 
 Written in Golang and relies on [discordgo](https://github.com/bwmarrin/discordgo).
-
 
 ### Self Hosting the Bot
 
@@ -41,7 +48,6 @@ Currently, the bot supports the following commands:
  - `/leave` - Leaves the voice channel.
  - `/join` - Joins the voice channel the user is in.
  - `/ping` - Pings the bot and returns "Pong!" to test if the bot is online.
-
 
 ### Future Plans
 
